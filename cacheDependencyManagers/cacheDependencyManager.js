@@ -188,7 +188,7 @@ CacheDependencyManager.prototype.installCachedDependencies = function (cachePath
 };
 
 
-CacheDependencyManager.prototype.loadDependencies = function (callback) {
+CacheDependencyManager.prototype.loadDependencies = function (callback, onCacheExists, onCacheDoesntExists) {
   var self = this;
   var error = null;
 
@@ -230,6 +230,10 @@ CacheDependencyManager.prototype.loadDependencies = function (callback) {
   var cacheArchiveExists = fs.existsSync(cachePathArchive);
   var cacheNotArchivedExists = fs.existsSync(cachePathNotArchived);
   if (!this.config.forceRefresh && (cacheArchiveExists || cacheNotArchivedExists)) {
+    if(onCacheExists) {
+      return onCacheExists();
+    }
+
     this.cacheLogInfo('cache exists');
 
     // Try to retrieve cached dependencies
@@ -240,6 +244,10 @@ CacheDependencyManager.prototype.loadDependencies = function (callback) {
     );
 
   } else { // install dependencies with CLI tool and cache
+    if(onCacheDoesntExists) {
+      return onCacheDoesntExists();
+    }
+
     // Try to install dependencies using package manager
     error = this.installDependencies();
     if (error !== null) {

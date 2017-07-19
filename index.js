@@ -36,6 +36,10 @@ var main = function () {
     })
     .help('run npm-cache using specified config file');
 
+  parser.command('check')
+    .callback(checkCache)
+    .help('check if cache exists and exit with code 0 if it does, code 1 otherwise');
+
   parser.command('clean')
     .callback(cleanCache)
     .help('clear cache directory');
@@ -110,7 +114,7 @@ var prepareCacheDirectory = function (cacheDirectory) {
 // npm-cache command handlers
 
 // main method for installing specified dependencies
-var installDependencies = function (opts) {
+var installDependencies = function (opts, loadDependenciesArgs) {
   prepareCacheDirectory(opts.cacheDirectory);
 
   var availableManagers = CacheDependencyManager.getAvailableManagers();
@@ -132,7 +136,7 @@ var installDependencies = function (opts) {
         managerConfig = managerConfig(managerCommonConfig);
       }
       var manager = new CacheDependencyManager(Object.assign(managerCommonConfig, managerConfig));
-      manager.loadDependencies(callback);
+      manager.loadDependencies.apply(manager, [callback].concat(loadDependenciesArgs || []));
     },
     function onInstalled (error) {
       if (error === null) {
@@ -145,6 +149,19 @@ var installDependencies = function (opts) {
     }
   );
 };
+
+var checkCache = function (opts) {
+  installDependencies(opts, [
+    function() {
+      logger.logInfo('cache exists');
+      process.exit(0);
+    },
+    function() {
+      logger.logInfo('cache doesn\'t exists');
+      process.exit(1);
+    }
+  ]);
+}
 
 var reportHash = function (opts) {
   var availableManagers = CacheDependencyManager.getAvailableManagers();
