@@ -8,7 +8,7 @@ var logger = require('../util/logger');
 
 // call these two upfront so log messages emitted by them only show up once
 var configFile = getConfigFile();
-var installDirectory = getInstallDirectory();
+var installPath = getInstallDirectory();
 
 /**
  * @param {string} filename
@@ -111,7 +111,7 @@ module.exports = {
     cliName: 'jspm',
     getCliVersion: getJspmVersion,
     configPath: configFile,
-    installDirectory: installDirectory,
+    installPath: installPath,
     addToArchiveAndRestore: configFile,
     installCommand: 'jspm install',
     getFileHash: getConfigurationHash

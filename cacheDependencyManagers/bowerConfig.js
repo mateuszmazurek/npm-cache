@@ -36,7 +36,7 @@ module.exports = {
     return shell.exec('bower --version', {silent: true}).output.trim();
   },
   configPath: path.resolve(process.cwd(), 'bower.json'),
-  installDirectory: getBowerInstallDirectory(),
+  installPath: getBowerInstallDirectory(),
   installCommand: 'bower install',
   getFileHash: getFileHash
 };

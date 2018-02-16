@@ -35,7 +35,7 @@ module.exports = {
     return shell.exec('npm --version', {silent: true}).output.trim();
   },
   configPath: getNpmConfigPath(),
-  installDirectory: 'node_modules',
+  installPath: 'node_modules',
   installCommand: 'npm install',
   getFileHash: getFileHash
 };
