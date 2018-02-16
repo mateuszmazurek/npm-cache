@@ -26,8 +26,8 @@ var getAbsolutePath = function (relativePath) {
   return path.resolve(process.cwd(), relativePath);
 };
 
-var getFileBackupPath = function (installedDirectory) {
-  return path.join(installedDirectory, '.npm-cache');
+var getFileBackupPath = function (installedPath) {
+  return path.join(installedPath, '.npm-cache');
 };
 
 var getFileBackupFilename = function (file) {
@@ -87,11 +87,11 @@ CacheDependencyManager.prototype.restoreFile = function (backupPath, file) {
 CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory, cachePath, callback) {
   var self = this;
   var error = null;
-  var installedDirectory = getAbsolutePath(this.config.installDirectory);
-  var fileBackupDirectory = getFileBackupPath(installedDirectory);
-  this.cacheLogInfo('archiving dependencies from ' + installedDirectory);
+  var installedPath = getAbsolutePath(this.config.installPath);
+  var fileBackupDirectory = getFileBackupPath(installedPath);
+  this.cacheLogInfo('archiving dependencies from ' + installedPath);
 
-  if (!fs.existsSync(installedDirectory)) {
+  if (!fs.existsSync(installedPath)) {
     this.cacheLogInfo('skipping archive. Install directory does not exist.');
     return error;
   }
@@ -109,7 +109,7 @@ CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory,
   tmp.setGracefulCleanup();
 
   function onError(error) {
-    self.cacheLogError('error tar-ing ' + installedDirectory + ' :' + error);
+    self.cacheLogError('error tar-ing ' + installedPath + ' :' + error);
     onFinally();
     callback(error);
   }
@@ -134,15 +134,24 @@ CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory,
     }
   }
 
-  var installedDirectoryStream = fstream.Reader({path: installedDirectory}).on('error', onError);
+  function pack() {
+    if (self.config.installType === 'file') {
+      return tar.pack(path.dirname(installedPath), {
+        entries: [path.basename(installedPath)]
+      });
+    }
+    return tar.pack(installedPath);
+  }
+
+  var installedPathStream = fstream.Reader({path: installedPath}).on('error', onError);
   // TODO: speed this up
   if (this.config.noArchive) {
-    installedDirectoryStream
+    installedPathStream
       .on('end', onEnd)
       .pipe(fstream.Writer({path: tmpName, type: 'Directory'}));
 
   } else {
-    tar.pack(installedDirectory)
+    pack()
       .pipe(zlib.createGzip())
       .pipe(fs.createWriteStream(tmpName))
       .on('error', onError)
@@ -152,11 +161,11 @@ CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory,
 
 CacheDependencyManager.prototype.installCachedDependencies = function (cachePath, compressedCacheExists, callback) {
   var self = this;
-  var installDirectory = getAbsolutePath(this.config.installDirectory);
-  var fileBackupDirectory = getFileBackupPath(installDirectory);
-  var targetPath = path.dirname(installDirectory);
-  this.cacheLogInfo('clearing installed dependencies at ' + installDirectory);
-  fs.removeSync(installDirectory);
+  var installPath = getAbsolutePath(this.config.installPath);
+  var fileBackupDirectory = getFileBackupPath(installPath);
+  var targetPath = path.dirname(installPath);
+  this.cacheLogInfo('clearing installed dependencies at ' + installPath);
+  fs.removeSync(installPath);
   this.cacheLogInfo('...cleared');
   this.cacheLogInfo('retrieving dependencies from ' + cachePath);
 
@@ -176,7 +185,7 @@ CacheDependencyManager.prototype.installCachedDependencies = function (cachePath
   if (compressedCacheExists) {
     fs.createReadStream(cachePath)
       .pipe(zlib.createGunzip())
-      .pipe(tar.extract(installDirectory))
+      .pipe(tar.extract(this.config.installType === 'file' ? targetPath : installPath))
       .on('error', onError)
       .on('finish', onEnd);
   } else {
@@ -256,10 +265,10 @@ CacheDependencyManager.prototype.loadDependencies = function (callback, onCacheE
     }
 
     // Try to archive newly installed dependencies
-    var cachePathWithInstalledDirectory = path.resolve(cachePathNotArchived, this.config.installDirectory);
+    var cachePathWithInstalledPath = path.resolve(cachePathNotArchived, this.config.installPath);
       this.archiveDependencies(
       this.config.noArchive ? cachePathNotArchived : cacheDirectory,
-      this.config.noArchive ? cachePathWithInstalledDirectory : cachePathArchive,
+      this.config.noArchive ? cachePathWithInstalledPath : cachePathArchive,
       callback
     );
   }

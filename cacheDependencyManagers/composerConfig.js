@@ -79,7 +79,7 @@ module.exports = {
   cliName: 'composer',
   getCliVersion: getCliVersion,
   configPath: getComposerConfigPath(),
-  installDirectory: getComposerInstallDirectory(),
+  installPath: getComposerInstallDirectory(),
   installCommand: 'composer install',
   getFileHash: getFileHash
 };
