@@ -280,7 +280,7 @@ CacheDependencyManager.prototype.loadDependencies = function (callback, onCacheE
  * @returns {Object} availableDefaultManagers
  */
 CacheDependencyManager.getAvailableDefaultManagers = function() {
-  return _.pick(CacheDependencyManager.getAvailableManagers(), ['composer', 'npm', 'bower']);
+  return _.pick(CacheDependencyManager.getAvailableManagers(), ['composer', 'npm', 'bower', 'yarn']);
 };
 
 /**
