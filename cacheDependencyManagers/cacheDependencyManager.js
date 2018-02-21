@@ -89,6 +89,7 @@ CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory,
   var error = null;
   var installedPath = getAbsolutePath(this.config.installPath);
   var fileBackupDirectory = getFileBackupPath(installedPath);
+  var installType = this.config.installType || 'Directory';
   this.cacheLogInfo('archiving dependencies from ' + installedPath);
 
   if (!fs.existsSync(installedPath)) {
@@ -135,7 +136,7 @@ CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory,
   }
 
   function pack() {
-    if (self.config.installType === 'file') {
+    if (installType === 'File') {
       return tar.pack(path.dirname(installedPath), {
         entries: [path.basename(installedPath)]
       });
@@ -148,7 +149,7 @@ CacheDependencyManager.prototype.archiveDependencies = function (cacheDirectory,
   if (this.config.noArchive) {
     installedPathStream
       .on('end', onEnd)
-      .pipe(fstream.Writer({path: tmpName, type: 'Directory'}));
+      .pipe(fstream.Writer({path: tmpName, type: installType}));
 
   } else {
     pack()
@@ -182,10 +183,17 @@ CacheDependencyManager.prototype.installCachedDependencies = function (cachePath
     callback();
   }
 
+  function getExtractPath() {
+    if (self.config.installType === 'File') {
+      return targetPath;
+    }
+    return installPath;
+  }
+
   if (compressedCacheExists) {
     fs.createReadStream(cachePath)
       .pipe(zlib.createGunzip())
-      .pipe(tar.extract(this.config.installType === 'file' ? targetPath : installPath))
+      .pipe(tar.extract(getExtractPath()))
       .on('error', onError)
       .on('finish', onEnd);
   } else {
